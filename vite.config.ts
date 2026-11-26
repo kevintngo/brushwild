@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import { glslSlim } from './tools/vite-plugin-glsl-slim';
+import { falHero } from './tools/vite-plugin-fal';
 
 export default defineConfig({
   base: './',
-  plugins: [glslSlim()],
+  plugins: [glslSlim(), falHero()],
   server: {
     port: 5173,
     watch: { ignored: ['**/trailer/**', '**/dist/**', '**/docs/**'] },

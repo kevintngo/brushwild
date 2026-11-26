@@ -1,3 +1,4 @@
+import type { Look } from '../content/looks';
 import type { ClassId, Difficulty, EquipSlot, SkillId } from '../types';
 import type { ItemInstance } from '../rules/items';
 import { starterItem } from '../rules/items';
@@ -70,7 +71,9 @@ export interface Character {
   view: [number, number] | null;
   hp: number;
   resource: number;
-  look?: { tunic: number; hair: number };
+  look?: Look;
+  title?: string;
+  story?: string;
   tally: { kills: number; deaths: number; elites: number; bosses: number; dungeons: number; legendaries: number };
 }
 

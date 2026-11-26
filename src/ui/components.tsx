@@ -187,9 +187,9 @@ export function Choice<T extends string | number>({ label, hint, value, options,
   );
 }
 
-export function Tabs<T extends string>({ tabs, value, onChange, label }: { tabs: [T, string][]; value: T; onChange: (t: T) => void; label: string }) {
+export function Tabs<T extends string>({ tabs, value, onChange, label, row }: { tabs: [T, ComponentChildren][]; value: T; onChange: (t: T) => void; label: string; row?: boolean }) {
   return (
-    <div class="tabs" role="tablist" aria-label={label}>
+    <div class={`tabs ${row ? 'row' : ''}`} role="tablist" aria-label={label}>
       {tabs.map(([id, text]) => (
         <button type="button" role="tab" aria-selected={id === value} class={`tab ${id === value ? 'on' : ''}`} onClick={() => onChange(id)}
           onKeyDown={(e) => {

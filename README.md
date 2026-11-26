@@ -51,6 +51,28 @@ Then open the address it prints (`http://localhost:5173`). Add `?new` to open th
 
 Every push to `main` is tested, built and published by GitHub Actions (`.github/workflows/deploy.yml`), which writes the build to the `gh-pages` branch that GitHub Pages serves. It can also be run by hand from the Actions tab.
 
+## Draw me as the hero
+
+On the new-hero screen a visitor can take a photo, or upload one, and fal draws them into the game:
+
+- **Their look.** Gemini 2.5 Flash, through fal's vision endpoint, reads hair colour and style, skin tone, glasses, beard and the colour of their clothes. It also writes a playful title and a one-line backstory ("the Cheerful Explorer"). The 3D hero is then drawn by the game's own shaders with those settings, so it still belongs in the world.
+- **Their portrait.** Nano Banana 2 Edit redraws the photo as a pen-and-pencil hero in the chosen class's outfit, using a capture of the game's hero (`tools/fal-style.jpg`) as the style reference. The portrait appears on the status plate, the character sheet and the hero list.
+
+Both calls run at once, and the screen shows each model and how long it took (about 2 s and 9 s). Switching class afterwards keeps the look and offers to redraw the portrait.
+
+The feature runs only from the dev or preview server, which holds the key. Set `FAL_KEY` (or `FAL_API_KEY`) in the environment, or in a `.env` file in this folder or the one above it, then start the server:
+
+```bash
+npm run dev
+```
+
+The browser only talks to `/api/fal/look` and `/api/fal/portrait` on that server, which make two fixed calls to fal with fixed prompts; the key never reaches the browser or the build. The published site has no server, so there the photo step is simply hidden.
+
+- **Privacy.** The photo goes to fal and is not saved anywhere by the game; only the drawing is kept, in the browser's saves. The drawing comes back inline (fal's sync mode) rather than as a hosted file.
+- **Keep the server on localhost** (the default). Started with `--host`, anyone on the network could spend the key.
+- **Cost.** About $0.06 per portrait at 512 px, and a fraction of a cent per look.
+- **Phones.** The camera needs a secure page: it works on localhost, but a phone reaching the laptop over the network needs HTTPS. "Upload a photo" works anywhere and opens the phone's camera.
+
 ## Controls
 
 Every action can be rebound in Settings › Controls (two keys and a pad button each).
@@ -118,7 +140,7 @@ There is no edge. Land is generated chunk by chunk as it comes into view; a chun
 .github/workflows/      the deploy on every push to main
 index.html              the page
 public/static/          favicon, app icons, share picture, web app manifest
-tools/                  the release build's shader trimming
+tools/                  the release build's shader trimming, and the dev server's fal proxy
 src/
   main.ts               entry: settings, saves, the game, the interface, sound
   config.js             shared tunables (also handed to shaders as #defines)

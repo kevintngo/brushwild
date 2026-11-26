@@ -19,6 +19,7 @@ import { watchTouch } from './ui/touch';
 import { startPadNav } from './ui/padnav';
 import type { Session } from './ui/screens';
 import { FACE } from './game/systems/faces';
+import { falModels } from './ui/fal';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 
@@ -55,6 +56,14 @@ try {
   };
 
   let previewing = false, cheer = 0;
+  const previewShift = (distance: number): number => {
+    const W = innerWidth, H = innerHeight;
+    if (W <= 0 || H <= 0) return 0;
+    const cardRight = Math.min(64, Math.max(16, W * 0.04)) + Math.min(540, W - 32);
+    const off = W >= 760 ? ((cardRight + W) / 2 - W / 2) / (W / 2) : 0;
+    return off * distance * Math.tan((17 * Math.PI) / 180) * (W / H);
+  };
+  addEventListener('resize', () => { if (previewing) game.camera.shift = previewShift(game.camera.goal.distance); });
   const enter = (c: Character) => {
     previewing = false;
     game.camera.shift = 0;
@@ -74,10 +83,12 @@ try {
   const session: Session = {
     heroes: () => store.summaries(account),
     play(id) { const c = store.loadCharacter(id); if (c) enter(c); },
-    create(classId, name, difficulty, look) {
+    create(classId, name, difficulty, look, lore) {
       const c = newCharacter(classId, name, Date.now() ^ account.seed);
       c.difficulty = difficulty;
       c.look = look;
+      c.title = lore.title;
+      c.story = lore.story;
       store.saveCharacter(c, account);
       ui.heroes.value++;
       enter(c);
@@ -92,9 +103,7 @@ try {
       Object.assign(game.camera.goal, { pitch: 0.16, distance, yaw: 0 });
       if (!previewing) Object.assign(game.camera, { yaw: 0, pitch: 0.3, distance: 9 });
       game.camera.portrait = true;
-      const W = innerWidth, H = innerHeight, cardRight = Math.min(64, Math.max(16, W * 0.04)) + Math.min(540, W - 32);
-      const off = W >= 760 ? ((cardRight + W) / 2 - W / 2) / (W / 2) : 0;
-      game.camera.shift = off * distance * Math.tan((17 * Math.PI) / 180) * (W / H);
+      game.camera.shift = previewShift(distance);
       previewing = true;
       cheer = 1.4;
     },
@@ -119,6 +128,7 @@ try {
     },
   };
 
+  falModels();
   render(h(App, { session, store, account }), document.getElementById('app')!);
   if (fresh || !account.heroes.length) ui.screen.value = fresh ? 'create' : 'title';
 

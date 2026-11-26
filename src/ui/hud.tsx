@@ -34,7 +34,7 @@ function Status() {
   const statuses = p.statuses.filter((s) => s.id !== 'warded' || p.barrier > 0);
   return (
     <section id="status" class="plate" aria-label="Your hero">
-      <div class="badge" title="Level">{c.level}</div>
+      <div class={`badge ${c.look?.portrait ? 'art' : ''}`} title={`Level ${c.level}`}>{c.look?.portrait && <img src={c.look.portrait} alt="" />}<span>{c.level}</span></div>
       <div class="bars">
         <div class="who"><span id="pname">{c.name}</span>
           {boon && <span class="boon">{BOONS[boon.id]?.name} {Math.floor(boon.left / 60)}:{String(Math.max(0, Math.ceil(boon.left) % 60)).padStart(2, '0')}</span>}

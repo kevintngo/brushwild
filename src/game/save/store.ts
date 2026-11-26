@@ -13,7 +13,7 @@ export interface Account {
   stash: (ItemInstance | null)[][];
 }
 
-export interface HeroSummary { id: string; name: string; classId: ClassId; level: number; played: number; difficulty: string }
+export interface HeroSummary { id: string; name: string; classId: ClassId; level: number; played: number; difficulty: string; title?: string; portrait?: string }
 
 export interface KeyValue { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void }
 
@@ -76,7 +76,7 @@ export class SaveStore {
 
   summaries(account: Account): HeroSummary[] {
     return account.heroes.map((id) => this.loadCharacter(id)).filter((c): c is Character => !!c)
-      .map((c) => ({ id: c.id, name: c.name, classId: c.classId, level: c.level, played: c.played, difficulty: c.difficulty }));
+      .map((c) => ({ id: c.id, name: c.name, classId: c.classId, level: c.level, played: c.played, difficulty: c.difficulty, title: c.title, portrait: c.look?.portrait }));
   }
 
   exportAll(account: Account): string {

@@ -289,3 +289,53 @@ body.touch #fps { position: absolute; left: 4px; bottom: 2px; }
 .swatches > span { min-width: 64px; font-size: 18px; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; border: 1.6px solid var(--pen); padding: 0; box-shadow: inset 0 0 0 3px var(--paper); cursor: pointer; }
 .swatch.on { outline: 3px solid var(--pen); outline-offset: 2px; }
+
+.photo-hero { display: grid; gap: 10px; padding: 12px 14px; background: #fbf5e6; border: 1.6px dashed var(--pen); border-radius: var(--wobble); }
+.photo-row { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: center; }
+.photo-face { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pen); background: var(--paper); box-shadow: inset 0 0 0 3px var(--paper); }
+.photo-face.shot { filter: grayscale(0.35) sepia(0.25); }
+.photo-face.blank { display: block; border-style: dashed; background: repeating-linear-gradient(118deg, rgba(98, 60, 30, 0.12) 0 1.5px, transparent 1.5px 6px); }
+.photo-text { display: grid; gap: 4px; }
+.photo-text strong { font-weight: 400; font-size: 21px; }
+.photo-text small { color: var(--dim); font-size: 14px; line-height: 1.25; }
+.photo-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.camera { display: grid; gap: 8px; }
+.camera video { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; border: 1.6px solid var(--pen); transform: scaleX(-1); background: var(--ink); }
+.fal-runs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fal-runs li { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 4px 10px; font-size: 16px; }
+.fal-runs li::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--pen); grid-row: span 2; align-self: center; }
+.fal-runs li > span { grid-column: 2; }
+.fal-runs li > small { grid-column: 2; color: var(--dim); font-size: 13px; }
+.fal-runs li > b { grid-column: 3; grid-row: 1 / span 2; align-self: center; font-weight: 400; font-variant-numeric: tabular-nums; }
+.fal-runs li > em { grid-column: 2 / span 2; color: var(--red-ink); font-style: normal; font-size: 14px; }
+.fal-runs li.busy::before { border-style: dashed; animation: spin 1.2s linear infinite; }
+.fal-runs li.done::before { background: var(--green-ink); }
+.fal-runs li.failed::before { background: var(--red-ink); }
+@keyframes spin { to { transform: rotate(1turn); } }
+.lore { margin: 0; display: grid; gap: 2px; }
+.lore strong { font-weight: 400; font-size: 21px; color: var(--red-ink); }
+.lore span { color: var(--dim); font-style: italic; }
+.swatches.looks .chip { font-size: 15px; }
+.badge.art { position: relative; padding: 0; width: 60px; height: 60px; }
+body.touch .badge.art { width: 50px; height: 50px; }
+.badge.art img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.badge.art span { position: absolute; right: -7px; bottom: -6px; min-width: 22px; height: 22px; padding: 0 3px; display: grid; place-items: center; border-radius: 11px; background: var(--paper); border: 1.6px solid var(--vermilion); font-size: 15px; }
+.hero-play.art { grid-template-columns: 52px 1fr; column-gap: 12px; }
+.hero-play.art .hero-face { grid-row: span 2; width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 1.6px solid var(--pen); }
+.hero-lore { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; }
+.hero-lore img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 1.8px solid var(--pen); }
+.hero-lore strong { font-weight: 400; font-size: 20px; }
+.hero-lore p { margin: 2px 0 0; color: var(--dim); font-style: italic; }
+.fal-logo { display: inline-block; height: 0.95em; width: auto; vertical-align: -0.16em; margin: 0 0.1em; }
+.tab-fal { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.tab-fal small { color: var(--dim); font-size: 0.8em; }
+.tab-fal .fal-logo { height: 1em; vertical-align: 0; }
+.title-card.create { grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden; height: min(600px, calc(100vh - 32px)); }
+.title-card.create h2 { margin-bottom: 0; }
+.create-body { min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 2px 8px 4px; }
+.create-pane { display: grid; gap: 14px; }
+.create-pane[hidden] { display: none; }
+@media (max-width: 480px) {
+  .photo-row { grid-template-columns: 92px 1fr; gap: 12px; }
+  .photo-face { width: 92px; height: 92px; }
+}

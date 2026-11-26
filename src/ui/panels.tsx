@@ -162,6 +162,10 @@ export function CharacterPanel() {
   const avgRes = (res.fire + res.frost + res.storm + res.poison + res.shadow) / 5;
   return (
     <Panel id="character" title="Character" side="left">
+      {(c.look?.portrait || c.story) && <div class="hero-lore">
+        {c.look?.portrait && <img src={c.look.portrait} alt={`${c.name}, drawn from a photo`} />}
+        <div><strong>{c.name}{c.title ? ` ${c.title}` : ''}</strong>{c.story && <p>{c.story}</p>}</div>
+      </div>}
       <div class="row"><p><strong>{c.name}</strong> · level {c.level} {cls.name}</p><p class="dim">{c.level >= LEVEL_CAP ? 'Highest level' : `${c.xp} / ${xpToNext(c.level)} xp`}</p></div>
       <div class="attrs">
         {ATTRS.map((a) => (

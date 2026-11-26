@@ -131,6 +131,30 @@ The open world is unchanged in principle: seeded, chunked, infinite. New:
 - The HUD is laid out in regions (left column, centre column, right column and
   a bottom dock) so nothing can overlap, at any window size or on touch screens.
 
+## Photo heroes (fal)
+
+`tools/vite-plugin-fal.ts` adds two routes to the dev and preview servers,
+`/api/fal/look` and `/api/fal/portrait`, plus `/api/fal/status`. They hold the fal
+key (read from the environment or a `.env` here or one folder up) and make only
+fixed calls: a vision model with a fixed prompt that answers in JSON, and an
+image edit with a fixed prompt and the game's own hero as the style reference
+(`tools/fal-style.jpg`). Inputs must be JPEG, PNG or WebP data URLs under 6 MB;
+at most four calls run at once. The production build has no server, so
+`ui/fal.ts` asks for the status first and the photo step only appears when a key
+is present.
+
+`content/looks.ts` turns the vision model's words into the hero's look
+(`lookFromPhoto`): hair colour and style, skin tone, beard, glasses and a tunic
+colour, each an index into a short list the player can also pick by hand. The
+look rides to the GPU packed into the figure's spare float next to the gear flags
+and the face: skin from 64, hairstyle from 512, beard from 4096, glasses at
+16384. The humanoid shader decodes it: skin tones change the face and hands'
+pencil and how firmly it is laid (darker tones draw the face's lines in light
+pencil and ring the eyes), hairstyles add or remove hair shapes, glasses are pen
+rims and a bridge, a beard is painted on the jaw. The portrait is shrunk to
+320 px and saved with the look; the title and backstory are saved on the
+character.
+
 ## Faces
 
 Heroes and townsfolk wear an expression (`systems/faces.ts`), packed into the

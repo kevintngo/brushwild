@@ -1,3 +1,4 @@
+import { appearanceBits } from './content/looks';
 import { RENDER, WORLD } from '../config.js';
 import { INSTANCE_FLOATS } from '../gfx/passes/entities.js';
 import type { Game } from './game';
@@ -71,7 +72,7 @@ export class View {
       d[o + 12] = c[0][0] + (t ? (t[0] - c[0][0]) * k : 0); d[o + 13] = c[0][1] + (t ? (t[1] - c[0][1]) * k : 0); d[o + 14] = c[0][2] + (t ? (t[2] - c[0][2]) * k : 0);
       d[o + 15] = e.kind === 'drop' ? 0 : e.move;
       d[o + 16] = c[1][0]; d[o + 17] = c[1][1]; d[o + 18] = c[1][2]; d[o + 19] = e.extra;
-      d[o + 20] = c[2][0]; d[o + 21] = c[2][1]; d[o + 22] = c[2][2]; d[o + 23] = (e.kind === 'player' ? gearFlags(e) : 0) + 8 * (e.face ?? 0);
+      d[o + 20] = c[2][0]; d[o + 21] = c[2][1]; d[o + 22] = c[2][2]; d[o + 23] = (e.kind === 'player' ? gearFlags(e) + appearanceBits(e.char.look) : 0) + 8 * (e.face ?? 0);
       if (e.kind !== 'drop' && e.kind !== 'missile' && dist < 45) casters.push({ e, dist });
     }
 

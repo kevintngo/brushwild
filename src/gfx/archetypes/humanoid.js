@@ -6,8 +6,24 @@ registerArchetype({
   glsl: glsl`
 vec3 hHip, hChest, hHead, hHandL, hHandR, hFootL, hFootR, hBlade;
 float hDraw;
-float gearBit(float b) { return mod(floor(eSpare / b + 0.01), 2.0); }
-float faceOf() { return floor(eSpare / 8.0 + 0.01); }
+float packed(float at, float n) { return mod(floor(eSpare / at + 0.01), n); }
+float gearBit(float b) { return packed(b, 2.0); }
+float faceOf() { return packed(8.0, 8.0); }
+float skinOf() { return packed(64.0, 8.0); }
+float styleOf() { return packed(512.0, 8.0); }
+float beardOf() { return packed(4096.0, 4.0); }
+float glassesOf() { return packed(16384.0, 2.0); }
+
+void skinTone(out vec3 albedo, out float cover) {
+  float k = skinOf();
+  albedo = P_APRICOT; cover = 0.1;
+  if (k > 0.5 && k < 1.5) { albedo = vec3(0.97, 0.72, 0.6); cover = 0.2; }
+  else if (k > 1.5 && k < 2.5) { albedo = vec3(0.94, 0.64, 0.44); cover = 0.3; }
+  else if (k > 2.5 && k < 3.5) { albedo = vec3(0.84, 0.56, 0.36); cover = 0.44; }
+  else if (k > 3.5 && k < 4.5) { albedo = vec3(0.72, 0.52, 0.31); cover = 0.56; }
+  else if (k > 4.5 && k < 5.5) { albedo = vec3(0.5, 0.32, 0.2); cover = 0.74; }
+  else if (k > 5.5) { albedo = vec3(0.4, 0.25, 0.16); cover = 0.84; }
+}
 bool robed() { return eExtra > 1.5 && eExtra < 2.5; }
 float hemY() { return robed() ? hHip.y - 0.3 : hHip.y - 0.11; }
 vec3 kneeOf(float side) { return hHip + vec3(0.09 * side, -0.04, 0.0); }
@@ -110,7 +126,6 @@ float entMap(vec3 p, out float mat) {
   hair = smin(hair, length(hp - vec3(0.02, 0.33, -0.1)) - 0.09, 0.1);
   float accent = 1e3, wood = 1e3, metal = 1e3, glow = 1e3, shield = 1e3;
   if (eExtra < 0.5) {
-    hair = smin(hair, sdCapsule(hp, vec3(0.0, 0.05, -0.3), vec3(0.0, -0.2, -0.42 - 0.05 * ePose.w), 0.07), 0.08);
     vec3 neck = hChest + vec3(0.0, 0.15, 0.0);
     accent = sdTorusY(p - neck, 0.13, 0.06);
     float sway = sin(uTime * 3.0 + eLook.x * 9.0);
@@ -154,6 +169,14 @@ float entMap(vec3 p, out float mat) {
       if (hDraw > 0.05) metal = min(metal, sdCapsule(p, hHandR, hHandL + normalize(hHandL - hHandR) * 0.18, 0.011));
     }
   }
+  float style = styleOf();
+  if ((style < 0.5 && eExtra < 0.5) || (style > 2.5 && style < 3.5)) hair = smin(hair, sdCapsule(hp, vec3(0.0, 0.05, -0.3), vec3(0.0, -0.2, -0.42 - 0.05 * ePose.w), 0.07), 0.08);
+  if (style > 1.5 && style < 2.5) {
+    hair = smin(hair, sdCapsule(hp, vec3(0.0, 0.0, -0.18), vec3(0.0, -0.34, -0.24), 0.25), 0.12);
+    hair = smin(hair, min(sdCapsule(hp, vec3(-0.27, -0.02, -0.04), vec3(-0.25, -0.3, -0.08), 0.075), sdCapsule(hp, vec3(0.27, -0.02, -0.04), vec3(0.25, -0.3, -0.08), 0.075)), 0.06);
+  }
+  if (style > 3.5 && style < 4.5) hair = smin(hair, length(hp - vec3(0.0, 0.31, -0.2)) - 0.125, 0.05);
+  if (style > 4.5) hair = 1e3;
   if (hair < d) { d = hair; mat = 1.0; }
 
   float torso = sdTaper(p, hHip + vec3(0.0, 0.1, 0.0), hChest + vec3(0.0, 0.04, 0.0), 0.162, 0.15);
@@ -239,18 +262,36 @@ void entFace(vec3 f, inout Surf s) {
     ink = max(ink, (penLine(e.y - e.x) + penLine(e.y + e.x)) * step(abs(e.x), 0.034) * step(abs(e.y), 0.034));
     mouth = penLine(mo.y) * step(abs(mo.x), 0.03);
   }
-  s.ink = max(ink, max(max(browInk(f), mouth), rim));
+  float specs = 0.0;
+  if (glassesOf() > 0.5) {
+    vec2 g = vec2(e.x, e.y - 0.004) / vec2(0.09, 0.095);
+    specs = max(penLine((length(g) - 1.0) * 0.09), penLine(f.y - 0.012) * step(abs(f.x), 0.036));
+    specs = max(specs, penLine(e.y - 0.02) * step(0.09, u) * step(u, 0.21));
+  }
+  s.ink = max(max(ink, specs), max(max(browInk(f), mouth), rim));
+  if (skinOf() > 4.5 && s.ink > 0.5) { s.albedo = P_CREAM; s.cover = 0.0; s.solid = 1.0; s.ink = 0.0; }
   vec2 c = vec2(abs(f.x) - 0.205, f.y + 0.095);
   float ticks = smoothstep(0.3, 0.1, abs(fract((c.x * 0.9 + c.y * 0.45) * 46.0) - 0.5)) * step(length(c * vec2(1.0, 1.7)), 0.055);
   if (ticks > 0.1) { s.albedo = P_ROSE; s.cover = ticks * 0.85; }
+  float beard = beardOf();
+  float jaw = step(f.y, -0.085 + 0.9 * f.x * f.x) * step(abs(f.x), 0.3) * (1.0 - step(abs(mo.x), 0.05) * step(abs(mo.y), 0.012));
+  if (beard > 1.5 && jaw > 0.5) {
+    s.albedo = eColC; s.cover = 0.86;
+    s.ink = max(max(s.ink, mouth), penLine(sin(f.x * 70.0 + f.y * 30.0) * 0.012) * 0.45);
+  } else if (beard > 0.5 && jaw > 0.5) {
+    float n = fract(sin(dot(floor(f.xy * 150.0), vec2(12.9898, 78.233))) * 43758.5453);
+    s.ink = max(s.ink, step(0.8, n) * 0.6);
+  }
   if (fill > 0.5) { s.albedo = tongue > 0.5 ? P_ROSE : P_UMBER * 0.6; s.cover = 1.0; s.solid = 1.0; s.ink = 0.0; }
+  float halo = open * (1.0 - blink) * smoothstep(1.32, 1.18, length(e / sz)) * step(4.5, skinOf());
+  if (halo > 0.5 && eye <= 0.3) { s.albedo = P_CREAM; s.cover = 0.0; s.solid = 1.0; }
   if (eye > 0.3) { s.albedo = INK_BLACK; s.cover = 1.0 - min(glint, 1.0); s.solid = 1.0; s.ink = 0.0; }
 }
 
 void entSurf(vec3 p, float mat, inout Surf s) {
   int m = int(mat + 0.5);
   if (m == 0) {
-    s.albedo = P_APRICOT; s.cover = 0.1; s.wrap = 0.35;
+    skinTone(s.albedo, s.cover); s.wrap = 0.35;
     vec3 f = p - hHead;
     if (f.z > 0.05 && length(f) < 0.36) entFace(f, s);
   } else if (m == 1) {

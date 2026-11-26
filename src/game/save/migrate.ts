@@ -1,3 +1,4 @@
+import { cleanLook } from '../content/looks';
 import type { ClassId } from '../types';
 import { EQUIP_SLOTS } from '../types';
 import { BAG_SIZE, BAR_SIZE, newCharacter, newJourney, type Character, type Bounty } from '../state/character';
@@ -78,5 +79,8 @@ export function sanitizeCharacter(raw: unknown): Character | null {
   if (!c.zone || (c.zone.kind !== 'overworld' && c.zone.kind !== 'dungeon')) c.zone = { kind: 'overworld' };
   c.level = Math.max(1, Math.min(50, Math.round(c.level || 1)));
   c.gold = Math.max(0, Math.round(c.gold || 0));
+  c.look = cleanLook(r.look);
+  c.title = typeof r.title === 'string' ? r.title.slice(0, 60) : undefined;
+  c.story = typeof r.story === 'string' ? r.story.slice(0, 240) : undefined;
   return c;
 }
