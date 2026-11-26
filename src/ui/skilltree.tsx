@@ -10,7 +10,7 @@ import { BAR_SIZE } from '../game/state/character';
 import type { ActionId } from '../engine/bindings';
 
 const SLOT_ACTIONS: ActionId[] = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5', 'slot6'];
-const PCT_KEYS = new Set(['stunChance', 'potency', 'pct', 'barrierPct', 'chill', 'slow', 'burn', 'bleed', 'poison', 'explodeCoef', 'zoneCoef', 'echo', 'crit', 'vulnChance', 'hasteSelf', 'falloff']);
+const PCT_KEYS = new Set(['stunChance', 'potency', 'pct', 'barrierPct', 'chill', 'slow', 'burn', 'bleed', 'poison', 'explodeCoef', 'zoneCoef', 'echo', 'crit', 'vulnChance', 'hasteSelf', 'falloff', 'implodeCoef']);
 const SEC_KEYS = new Set(['duration', 'cooldown', 'stun', 'freeze', 'delay', 'vuln', 'burnDur', 'bleedDur', 'poisonDur', 'zoneDur', 'arm', 'barrierDur', 'slowDur']);
 
 export function skillText(def: SkillDef, params: Record<string, number> | null): string {

@@ -44,7 +44,7 @@ export function baseAttributes(primary: Attr, level: number): Record<Attr, numbe
   return out;
 }
 
-export const LEVEL_CAP = 50;
+export const LEVEL_CAP = 99;
 export const xpToNext = (level: number): number => Math.round(36 * Math.pow(level, 1.55));
 export const xpFactor = (playerLevel: number, monsterLevel: number): number =>
   Math.max(0.1, Math.min(1.2, 1 - (playerLevel - monsterLevel - 2) * 0.2));

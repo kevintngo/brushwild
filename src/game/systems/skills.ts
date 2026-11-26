@@ -4,7 +4,7 @@ import type { SkillDef, SkillParams } from '../content/skills';
 import type { SkillState, TriggerRule } from '../rules/build';
 import type { TriggerOn } from '../content/effects';
 import type { Particle } from '../fx';
-import { ELEMENT_COLOR, FX_COLORS } from '../fx';
+import { CYBER, ELEMENT_COLOR, FX_COLORS } from '../fx';
 import { STATUSES } from '../content/statuses';
 import { baseEntity, yawFromDir, dirFromYaw } from '../entities';
 import { BEHAVIORS } from './behaviors';
@@ -28,7 +28,7 @@ export interface Shot {
   plain?: boolean;
 }
 export interface Blast { x: number; z: number; r: number; t: number; delay: number; ctx: CastCtx; mult: number; echo: boolean; fall?: Particle | null }
-export interface Zone { x: number; z: number; r: number; left: number; tick: number; next: number; ctx: CastCtx; coef: number; follow: boolean; slow: number; volley: boolean; element: Element; particle: Particle | null }
+export interface Zone { x: number; z: number; r: number; left: number; tick: number; next: number; ctx: CastCtx; coef: number; follow: boolean; slow: number; volley: boolean; element: Element; particle: Particle | null; drones?: Particle[]; shot?: number }
 export interface Trap { x: number; z: number; r: number; arm: number; left: number; ctx: CastCtx; particle: Particle | null }
 
 const BUFFER = 0.3;
@@ -53,7 +53,7 @@ export class Skills {
 
   reset(): void {
     for (const s of this.shots) this.game.fx.release(s.particle);
-    for (const z of this.zones) this.game.fx.release(z.particle);
+    for (const z of this.zones) { this.game.fx.release(z.particle); for (const d of z.drones ?? []) this.game.fx.release(d); }
     for (const t of this.traps) this.game.fx.release(t.particle);
     this.shots = []; this.blasts = []; this.zones = []; this.traps = []; this.stuck = [];
     this.buffered = null;
@@ -257,10 +257,10 @@ export class Skills {
     }
   }
 
-  launch(ctx: CastCtx, x: number, z: number, dirX: number, dirZ: number, o: { mult?: number; plain?: boolean } = {}): Shot {
+  launch(ctx: CastCtx, x: number, z: number, dirX: number, dirZ: number, o: { mult?: number; plain?: boolean; y?: number } = {}): Shot {
     const g = this.game, P = ctx.P;
     const arrow = ctx.def.tags.includes('physical') && ctx.def.tags.includes('ranged');
-    const y = g.world.surface(x, z) + (arrow ? 1.25 : 0.95);
+    const y = o.y ?? g.world.surface(x, z) + (arrow ? 1.25 : 0.95);
     const element = ctx.def.element;
     const life = P.life ?? 0.8;
     const s: Shot = {
@@ -268,7 +268,9 @@ export class Skills {
       y0: y, life0: life, arc: arrow ? 0.45 : 0, px: x, py: y, pz: z,
       pierce: Math.round(P.pierce ?? 0), hit: new Set(), ctx, mult: o.mult ?? 1, element, plain: o.plain,
       kind: arrow ? 'arrow' : 'orb',
-      particle: arrow ? null : g.fx.spawn('orb', x, y, z, { size: element === 'storm' ? 0.4 : 0.55, color: ELEMENT_COLOR[element], hold: true }),
+      particle: arrow ? null : P.laser
+        ? g.fx.spawn('laser', x, y, z, { size: 0.15, aspect: 6, rot: Math.atan2(dirX, dirZ), axial: true, color: CYBER.CYAN, hold: true })
+        : g.fx.spawn('orb', x, y, z, { size: element === 'storm' ? 0.4 : 0.55, color: ELEMENT_COLOR[element], hold: true }),
       ent: arrow ? g.entities.add<Missile>({ ...baseEntity('missile', 'arrow'), kind: 'missile', x, y, z, yaw: yawFromDir(dirX, dirZ), radius: 0.12, height: 0.12, colors: [FX_COLORS.RED, FX_COLORS.RED, FX_COLORS.RED] }) : null,
     };
     if (arrow && !o.plain) g.fx.spawn('ring', x, y, z, { size: 0.28, life: 0.14, color: FX_COLORS.WHITE, alpha: 0.8 });
@@ -347,7 +349,7 @@ export class Skills {
       }
       if (s.particle) {
         s.particle.x = s.x; s.particle.y = s.y; s.particle.z = s.z;
-        if (Math.random() < 0.6) g.fx.spawn('spark', s.x, s.y, s.z, { size: 0.15, life: 0.25, color: ELEMENT_COLOR[s.element], vy: 0.8 });
+        if (Math.random() < 0.6) g.fx.spawn(s.ctx.P.laser ? 'bit' : 'spark', s.x, s.y, s.z, { size: s.ctx.P.laser ? 0.06 : 0.15, life: 0.25, color: s.ctx.P.laser ? CYBER.CYAN : ELEMENT_COLOR[s.element], vy: 0.8 });
         g.fx.light(s.x, s.y, s.z, 5, 0.05);
       }
       if (done) {
@@ -386,10 +388,11 @@ export class Skills {
     for (const z of this.zones) {
       z.left -= dt;
       if (z.follow) { z.x = p.x; z.z = p.z; }
+      if (z.drones) z.drones.forEach((d, i) => { const o = g.fx.dronePos(i, z.drones!.length, p); d.x = o[0]; d.y = o[1]; d.z = o[2]; });
       if (z.particle) { z.particle.x = z.x; z.particle.z = z.z; z.particle.y = g.world.surface(z.x, z.z) + 0.12; }
       z.next -= dt;
       while (z.next <= 0 && z.left > 0) { z.next += z.tick; BEHAVIORS.zone.tick!(this, z); }
-      if (z.left <= 0) { g.fx.release(z.particle); continue; }
+      if (z.left <= 0) { g.fx.release(z.particle); BEHAVIORS.zone.end?.(this, z); continue; }
       this.zones[w++] = z;
     }
     this.zones.length = w;

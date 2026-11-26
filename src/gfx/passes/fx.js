@@ -28,10 +28,19 @@ flat out vec4 vParams, vColor, vMore, vPosSize;
 #include <common>
 void main() {
   vec2 corner = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1)) * 2.0 - 1.0;
-  vec2 c = rot2(iParams.w) * (corner * (iMore.x > 0.5 ? vec2(1.35, 1.35 * iMore.y) : vec2(1.0)));
-  vec3 wp = iMore.x > 0.5
-    ? iPosSize.xyz + vec3(c.x, 0.0, c.y) * iPosSize.w
-    : iPosSize.xyz + (uCamRight * c.x + uCamUp * c.y * iMore.y) * iPosSize.w;
+  vec3 wp;
+  if (iMore.x > 1.5) {
+    float cp = cos(iMore.w);
+    vec3 ax = vec3(sin(iParams.w) * cp, sin(iMore.w), cos(iParams.w) * cp);
+    vec3 side = cross(ax, uCamPos - iPosSize.xyz);
+    side = length(side) > 1e-4 ? normalize(side) : uCamRight;
+    wp = iPosSize.xyz + (side * corner.x + ax * corner.y * iMore.y) * iPosSize.w;
+  } else {
+    vec2 c = rot2(iParams.w) * (corner * (iMore.x > 0.5 ? vec2(1.35, 1.35 * iMore.y) : vec2(1.0)));
+    wp = iMore.x > 0.5
+      ? iPosSize.xyz + vec3(c.x, 0.0, c.y) * iPosSize.w
+      : iPosSize.xyz + (uCamRight * c.x + uCamUp * c.y * iMore.y) * iPosSize.w;
+  }
   vUv = corner; vParams = iParams; vColor = iColor; vMore = iMore; vPosSize = iPosSize; vWorld = wp;
   gl_Position = uViewProj * vec4(wp, 1.0);
   vT = length(wp - uCamPos);
@@ -71,7 +80,7 @@ void main() {
   float sceneT = texture(uGbuf, gl_FragCoord.xy * uInvRes).z;
   float soft = saturate((sceneT - vT) * 1.6 + 0.7);
   vec2 uv = vUv;
-  if (vMore.x > 0.5) {
+  if (vMore.x > 0.5 && vMore.x < 1.5) {
     vec3 at = uCamPos + normalize(vWorld - uCamPos) * sceneT;
     vec2 d = at.xz - vPosSize.xz;
     if (abs(at.y - vPosSize.y) > 0.9 + 0.6 * length(d)) discard;
@@ -253,6 +262,110 @@ registerFx('ripple', glsl`
 vec4 fx_ripple(vec2 uv, float life, float seed, vec4 col) {
   float front = mix(0.2, 0.9, life);
   return mark(vec3(0.227, 0.502, 0.659), pen(wobbly(uv, seed) - front) * step(life, 0.85) * min(col.a, 1.0));
+}`);
+
+registerFx('laser', glsl`
+vec4 fx_laser(vec2 uv, float life, float seed, vec4 col) {
+  float w = mix(1.0, 0.18, smoothstep(0.3, 1.0, life));
+  float ends = smoothstep(1.0, 0.82, abs(uv.y));
+  float x = abs(uv.x + 0.05 * sin(uv.y * 31.0 - uTime * 40.0 + seed * 17.0) * w);
+  float bands = 0.5 + 0.5 * sin(uv.y * 18.0 - uTime * 30.0 + seed * 5.0);
+  float rim = 0.95 * w * ends, mid = 0.55 * w * ends, core = 0.22 * w * ends;
+  vec4 c = mark(col.rgb * 0.75, body(x - rim) * hatch(uv * vec2(1.0, 5.0), seed) * 0.6);
+  c = over(mark(mix(col.rgb, vec3(1.0), 0.15 + 0.3 * bands), body(x - mid)), c);
+  c = over(mark(vec3(1.0), body(x - core)), c);
+  c = over(mark(FX_INK, pen(x - mid) * 0.7), c);
+  return c * min(col.a, 1.0);
+}`);
+
+registerFx('arc', glsl`
+vec4 fx_arc(vec2 uv, float life, float seed, vec4 col) {
+  float flick = floor(uTime * 20.0 + seed * 7.0);
+  float k = (uv.y + 1.0) * 5.0;
+  float i = floor(k), f = fract(k);
+  float a = hash12(vec2(i, flick + seed * 13.0)) - 0.5, b = hash12(vec2(i + 1.0, flick + seed * 13.0)) - 0.5;
+  float x = abs(uv.x - mix(a, b, f) * 1.1 * smoothstep(1.0, 0.7, abs(uv.y)));
+  float fade = 1.0 - smoothstep(0.55, 1.0, life);
+  vec4 c = mark(col.rgb * 0.75, body(x - 0.42) * hatch(uv * vec2(1.0, 4.0), seed) * 0.5);
+  c = over(mark(mix(col.rgb, vec3(1.0), 0.55), body(x - 0.15)), c);
+  c = over(mark(FX_INK, pen(x - 0.15) * 0.8), c);
+  return c * fade * step(abs(uv.y), 0.99) * min(col.a, 1.0);
+}`);
+
+registerFx('sigil', glsl`
+float sgTri(vec2 p, float r) {
+  float d = -1e3;
+  for (int i = 0; i < 3; i++) {
+    float a = float(i) * 2.0944 + 1.5708;
+    d = max(d, dot(p, vec2(cos(a), sin(a))));
+  }
+  return d - r;
+}
+vec4 fx_sigil(vec2 uv, float life, float seed, vec4 col) {
+  float r = length(uv), ang = atan(uv.y, uv.x);
+  float spin = uTime * 0.9 + seed * 6.2832;
+  float grow = smoothstep(0.0, 0.16, life), fade = 1.0 - smoothstep(0.84, 1.0, life);
+  float s = mix(0.55, 1.0, grow);
+  float rings = pen(r - 0.95 * s) + pen(r - 0.87 * s) * 0.8 + pen(r - 0.3 * s) * 0.7;
+  float ticks = step(0.55, fract((ang + spin) / 6.2832 * 36.0)) * step(0.87 * s, r) * step(r, 0.95 * s) * 0.85;
+  float dashes = pen(r - 0.62 * s) * step(0.4, fract((ang - spin * 1.7) / 6.2832 * 10.0));
+  float hexa = max(pen(sgTri(rot2(spin * 0.6) * uv, 0.3 * s)), pen(sgTri(rot2(spin * 0.6 + 1.0472) * uv, 0.3 * s))) * step(r, 0.62 * s);
+  float fill = body(r - 0.95 * s) * hatch(uv, seed) * 0.22;
+  return mark(mix(col.rgb, vec3(1.0), 0.15), saturate(rings + ticks + dashes + hexa + fill) * grow * fade * min(col.a, 1.0));
+}`);
+
+registerFx('vortex', glsl`
+vec4 fx_vortex(vec2 uv, float life, float seed, vec4 col) {
+  float r = length(uv), ang = atan(uv.y, uv.x);
+  float grow = smoothstep(0.0, 0.14, life), fade = 1.0 - smoothstep(0.86, 1.0, life);
+  float sw = ang * 3.0 + 7.0 / (r + 0.25) + uTime * 9.0 + seed * 6.0;
+  float arms = smoothstep(0.35, 0.8, 0.5 + 0.5 * sin(sw)) * smoothstep(1.0, 0.6, r) * smoothstep(0.08, 0.3, r);
+  float lines = pen((fract(sw / 6.2832) - 0.5) * 0.25 * r) * smoothstep(1.0, 0.5, r) * step(0.15, r);
+  float rim = pen(wobbly(uv, seed) - 0.95 * grow);
+  vec4 c = mark(col.rgb * 0.85, saturate(arms * (0.35 + 0.65 * hatch(uv * 1.5, seed)) + rim));
+  c = over(mark(FX_INK, saturate(lines * 0.8)), c);
+  c = over(mark(vec3(0.06, 0.04, 0.1), body(r - 0.2 * grow)), c);
+  return c * grow * fade * min(col.a, 1.0);
+}`);
+
+registerFx('hex', glsl`
+vec4 fx_hex(vec2 uv, float life, float seed, vec4 col) {
+  float r = length(uv);
+  float grow = smoothstep(0.0, 0.1, life), fade = 1.0 - smoothstep(0.88, 1.0, life);
+  vec2 g = uv * 4.5 + vec2(0.0, uTime * 0.6);
+  vec2 hs = vec2(1.0, 1.7320508);
+  vec2 a = mod(g, hs) - hs * 0.5, b = mod(g - hs * 0.5, hs) - hs * 0.5;
+  vec2 h = abs(dot(a, a) < dot(b, b) ? a : b);
+  float edge = 0.5 - max(dot(h, vec2(0.5, 0.8660254)), h.x);
+  float inside = body(r - 0.95);
+  float fres = smoothstep(0.4, 0.95, r) * inside;
+  float cells = (1.0 - smoothstep(0.0, 0.07, edge)) * inside;
+  vec4 c = mark(mix(col.rgb, vec3(1.0), 0.25), saturate(cells * (0.3 + 0.7 * fres) + fres * 0.35 * hatch(uv, seed)));
+  c = over(mark(FX_INK, pen(r - 0.95) * 0.8), c);
+  return c * grow * fade * min(col.a, 1.0);
+}`);
+
+registerFx('bit', glsl`
+vec4 fx_bit(vec2 uv, float life, float seed, vec4 col) {
+  vec2 a = abs(uv);
+  float d = max(a.x, a.y) - 0.62;
+  float show = step(life, 0.92) * step(0.22, hash12(vec2(seed * 91.0, floor(uTime * 14.0))));
+  vec4 c = mark(mix(col.rgb, vec3(1.0), 0.35 * step(max(a.x, a.y), 0.28)), body(d));
+  c = over(mark(FX_INK, pen(d) * 0.8), c);
+  return c * show * min(col.a, 1.0);
+}`);
+
+registerFx('shock', glsl`
+vec4 fx_shock(vec2 uv, float life, float seed, vec4 col) {
+  float r = wobbly(uv, seed);
+  float front = mix(0.15, 0.95, 1.0 - pow(1.0 - life, 3.0));
+  float d = abs(r - front) - (0.12 * (1.0 - life) + 0.02);
+  float ang = atan(uv.y, uv.x);
+  float streaks = step(0.7, fract(ang / 6.2832 * 28.0 + seed)) * step(r, front) * step(front * 0.55, r) * (1.0 - life) * 0.8;
+  vec4 c = mark(mix(col.rgb, vec3(1.0), 0.3), body(d) * (0.4 + 0.5 * hatch(uv, seed)));
+  c = over(mark(FX_INK, pen(d) * 0.85), c);
+  c = over(mark(col.rgb * 0.8, streaks), c);
+  return c * step(life, 0.95) * min(col.a, 1.0);
 }`);
 
 export class FxPass {

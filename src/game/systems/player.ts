@@ -17,7 +17,7 @@ export function makePlayer(game: Game, char: Character): Player {
   const build = compileBuild({ char });
   const x = char.pos.x, z = char.pos.z;
   const p: Player = {
-    ...baseEntity('player', 'humanoid'),
+    ...baseEntity('player', cls.archetype ?? 'humanoid'),
     kind: 'player',
     x, z, y: game.world.surface(x, z), yaw: 2.6, radius: 0.36, height: 1.6, ghost: true,
     colors: [

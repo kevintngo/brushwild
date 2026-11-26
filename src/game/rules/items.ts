@@ -158,7 +158,7 @@ export function canEquip(cls: ClassDef, it: ItemInstance, level: number): { ok: 
 }
 
 export const usableBy = (cls: ClassDef, b: ItemBase): boolean =>
-  b.kind === 'weapon' ? cls.weapons.includes(b.type!) : b.kind === 'offhand' ? cls.offhands.includes(b.type!) : true;
+  (!b.special || cls.gear.includes(b.id)) && (b.kind === 'weapon' ? cls.weapons.includes(b.type!) : b.kind === 'offhand' ? cls.offhands.includes(b.type!) : true);
 
 const fits = (groups: SlotGroup[], b: ItemBase): boolean => groups.some((g) =>
   g === 'any' || g === b.slot || (g === 'armor' && b.kind === 'armor') || (g === 'jewelry' && b.kind === 'jewelry') || (g === 'offhand' && b.kind === 'offhand'));
@@ -205,8 +205,9 @@ export function generateItem(rng: Rng, o: RollOptions): ItemInstance {
   let base: ItemBase;
   if (o.base && BASE[o.base]) base = BASE[o.base];
   else {
-    const usable = cls ? BASES.filter((b) => usableBy(cls, b)) : BASES;
-    const pool = cls && rng.chance(0.75) ? usable : BASES;
+    const open = BASES.filter((b) => !b.special);
+    const usable = cls ? open.filter((b) => usableBy(cls, b)) : open;
+    const pool = cls && usable.length && rng.chance(0.75) ? usable : open;
     base = rng.weighted(pool.map((b) => [b, b.kind === 'weapon' ? 0.7 : b.kind === 'offhand' ? 0.6 : 1] as const));
   }
 

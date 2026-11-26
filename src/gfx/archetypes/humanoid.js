@@ -1,11 +1,10 @@
 import { registerArchetype } from '../passes/entities.js';
 import { glsl } from '../shaderlib.js';
 
-registerArchetype({
-  id: 'humanoid', boundY: 0.8, boundR: 1.08, steps: 60,
-  glsl: glsl`
+export const SKELETON = glsl`
 vec3 hHip, hChest, hHead, hHandL, hHandR, hFootL, hFootR, hBlade;
 float hDraw;
+bool gCannon = false;
 float gearBit(float b) { return mod(floor(eSpare / b + 0.01), 2.0); }
 float faceOf() { return floor(eSpare / 8.0 + 0.01); }
 bool robed() { return eExtra > 1.5 && eExtra < 2.5; }
@@ -29,7 +28,7 @@ float sdBoot(vec3 p, vec3 foot, vec3 knee, float tall) {
   return min(smin(shaft, toe, 0.05), cuff);
 }
 
-void entPose() {
+void basePose() {
   float w = ePose.x, act = ePose.y, at = ePose.z, mv = ePose.w;
   float s = sin(w), c = cos(w);
   hDraw = 0.0;
@@ -84,6 +83,14 @@ void entPose() {
     hHandL = hChest + vec3(-0.27, -0.08, -0.34);
     hHandR = hChest + vec3(0.3, -0.14, -0.3);
     hBlade = normalize(vec3(0.2, 0.22, -0.95));
+  } else if (act > 4.5 && act < 5.5 && gCannon) {
+    float raise = smoothstep(0.0, 0.14, at) * (1.0 - smoothstep(0.72, 1.0, at));
+    float kick = smoothstep(0.3, 0.36, at) * (1.0 - smoothstep(0.36, 0.6, at));
+    hHandR = mix(hHandR, hChest + vec3(0.14, 0.12 + 0.03 * kick, 0.42 - 0.07 * kick), raise);
+    hHandL = mix(hHandL, hChest + vec3(-0.02, 0.02, 0.3), raise * 0.85);
+    hChest.z -= 0.025 * kick;
+    hHead.z -= 0.02 * kick;
+    hDraw = raise;
   } else if (act > 4.5 && act < 5.5) {
     float raise = smoothstep(0.0, 0.18, at), rec = smoothstep(0.7, 1.0, at);
     float pull = smoothstep(0.1, 0.5, at) * (1.0 - smoothstep(0.52, 0.58, at));
@@ -99,6 +106,14 @@ void entPose() {
     hDraw = pull;
   }
 }
+
+`;
+
+registerArchetype({
+  id: 'humanoid', boundY: 0.8, boundR: 1.08, steps: 60,
+  glsl: glsl`
+${SKELETON}
+void entPose() { basePose(); }
 
 float entMap(vec3 p, out float mat) {
   vec3 hp = p - hHead;

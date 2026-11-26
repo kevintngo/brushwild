@@ -73,12 +73,12 @@ export class Program {
     if (u) SETTERS[u.type](this.gl, u.loc, value, u.size);
     return this;
   }
-  tex(name, texture) {
+  tex(name, texture, target = this.gl.TEXTURE_2D) {
     const u = this.uniforms[name];
     if (!u) return this;
     const gl = this.gl;
     gl.activeTexture(gl.TEXTURE0 + this.unit);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.bindTexture(target, texture);
     gl.uniform1i(u.loc, this.unit++);
     return this;
   }

@@ -11,7 +11,7 @@ import type { ClassId, Difficulty } from '../game/types';
 import type { HeroSummary } from '../game/save/store';
 import { HAIRS, TUNICS, type Look } from '../game/content/looks';
 
-const DEFAULT_LOOK: Record<ClassId, Look> = { warden: { tunic: 0, hair: 0 }, emberwright: { tunic: 1, hair: 1 }, strider: { tunic: 2, hair: 2 } };
+const DEFAULT_LOOK: Record<ClassId, Look> = { warden: { tunic: 0, hair: 0 }, emberwright: { tunic: 1, hair: 1 }, strider: { tunic: 2, hair: 2 }, cyborg: { tunic: 5, hair: 2 } };
 
 export interface Session {
   heroes(): HeroSummary[];
@@ -91,7 +91,7 @@ export function Create({ session }: { session: Session }) {
           {CLASS_LIST.map((k) => (
             <button type="button" role="radio" aria-checked={k.id === cls} class={`class-card ${k.id === cls ? 'on' : ''}`} onClick={() => pick(k.id)}>
               <Painting class="class-art" deps={k.id} paint={(px) => classArt(k.id, px)} />
-              <strong>{k.name}</strong><small>{k.tagline}</small>
+              <strong>{k.name}{k.startLevel ? <em class="class-level">Lv {k.startLevel}</em> : null}</strong><small>{k.tagline}</small>
               <span class="class-skills">{k.start.map((id) => { const d = skillDef(id)!; return <Icon svg={skillIcon(d.icon, d.element)} />; })}</span>
             </button>
           ))}
@@ -101,11 +101,13 @@ export function Create({ session }: { session: Session }) {
           <div><span>Leans on</span>{ATTRIBUTE_INFO[c.primary].name}</div>
           <div><span>Fights with</span>{c.resource.name}</div>
           <div><span>Wields</span>{c.weapons.join(', ')}</div>
-          <div><span>Begins with</span>{c.start.map((id) => skillDef(id)!.name).join(' and ')}</div>
+          {c.startLevel
+            ? <div><span>Begins at</span>Level {c.startLevel}, every skill maxed</div>
+            : <div><span>Begins with</span>{c.start.map((id) => skillDef(id)!.name).join(' and ')}</div>}
         </div>
-        <Swatches label={cls === 'emberwright' ? 'Robe' : 'Tunic'} list={TUNICS} value={look.tunic} onPick={(i) => setLook({ ...look, tunic: i })} />
-        <Swatches label="Hair" list={HAIRS} value={look.hair} onPick={(i) => setLook({ ...look, hair: i })} />
-        <label class="name-field"><span>Name</span><input type="text" maxLength={20} value={name} placeholder={c.name} onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)} /></label>
+        <Swatches label={cls === 'emberwright' ? 'Robe' : cls === 'cyborg' ? 'Armour' : 'Tunic'} list={TUNICS} value={look.tunic} onPick={(i) => setLook({ ...look, tunic: i })} />
+        {cls !== 'cyborg' && <Swatches label="Hair" list={HAIRS} value={look.hair} onPick={(i) => setLook({ ...look, hair: i })} />}
+        <label class="name-field"><span>Name</span><input type="text" maxLength={20} value={name} placeholder={c.heroName ?? c.name} onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)} /></label>
         <Choice label="Difficulty" hint={DIFFICULTY[diff].desc + ' It can be changed later, in a town.'} value={diff} options={Object.entries(DIFFICULTY).filter(([k]) => k !== 'nightmare').map(([k, v]) => [k, v.name]) as [Difficulty, string][]} onChange={setDiff} />
         <div class="pair">
           <button type="button" class="btn" onClick={back}>Back</button>

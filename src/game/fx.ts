@@ -11,6 +11,8 @@ export const FX_COLORS = {
   FROST: C(150, 196, 226), INK: C(74, 77, 94), VIOLET: C(150, 120, 190), POISON: C(132, 170, 80),
 };
 const { GOLD, WHITE, DUST, SKY, LEAFY, RED, FLAME, FROST, INK, POISON } = FX_COLORS;
+export const CYBER = { CYAN: C(92, 226, 255), MAGENTA: C(236, 96, 214), VOID: C(150, 104, 255), WHITE: C(244, 250, 255) };
+const { CYAN, MAGENTA, VOID } = CYBER;
 
 const AURA: Partial<Record<string, Vec3>> = {
   rally: GOLD, laststand: RED, bloodrage: RED, haste: WHITE, hawkeye: SKY, unstoppable: GOLD,
@@ -21,20 +23,21 @@ export const ELEMENT_COLOR: Record<Element, Vec3> = {
   physical: WHITE, fire: FLAME, frost: FROST, storm: GOLD, poison: POISON, shadow: INK,
 };
 
-export type FxType = 'mote' | 'leaf' | 'spark' | 'burst' | 'slash' | 'ring' | 'orb' | 'puff' | 'heal' | 'mark' | 'click' | 'beam' | 'zone' | 'lane' | 'cloud' | 'ripple' | 'streak';
+export type FxType = 'mote' | 'leaf' | 'spark' | 'burst' | 'slash' | 'ring' | 'orb' | 'puff' | 'heal' | 'mark' | 'click' | 'beam' | 'zone' | 'lane' | 'cloud' | 'ripple' | 'streak'
+  | 'laser' | 'arc' | 'sigil' | 'vortex' | 'hex' | 'bit' | 'shock';
 
 export interface FxOpts {
   size?: number; life?: number; color?: Vec3; alpha?: number;
   vx?: number; vy?: number; vz?: number; grow?: number; gravity?: number; drag?: number;
   rot?: number; spin?: number; ground?: boolean; aspect?: number; follow?: AnyEntity | null; dy?: number;
-  hold?: boolean; sway?: number;
+  hold?: boolean; sway?: number; axial?: boolean; tilt?: number;
 }
 
 export interface Particle {
   type: number; x: number; y: number; z: number; vx: number; vy: number; vz: number;
   size: number; grow: number; life: number; max: number; color: Vec3; alpha: number;
   gravity: number; drag: number; rot: number; spin: number; ground: number; aspect: number;
-  follow: AnyEntity | null; dy: number; hold: boolean; seed: number; sway: number;
+  follow: AnyEntity | null; dy: number; hold: boolean; seed: number; sway: number; tilt: number;
 }
 
 const hexPencil = (h: string): Vec3 => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
@@ -53,7 +56,7 @@ export class Fx {
 
   constructor(game: Game) {
     this.game = game;
-    const ids: FxType[] = ['mote', 'leaf', 'spark', 'burst', 'slash', 'ring', 'orb', 'puff', 'heal', 'mark', 'click', 'beam', 'zone', 'lane', 'cloud', 'ripple', 'streak'];
+    const ids: FxType[] = ['mote', 'leaf', 'spark', 'burst', 'slash', 'ring', 'orb', 'puff', 'heal', 'mark', 'click', 'beam', 'zone', 'lane', 'cloud', 'ripple', 'streak', 'laser', 'arc', 'sigil', 'vortex', 'hex', 'bit', 'shock'];
     this.T = Object.fromEntries(ids.map((id) => [id, fxType(id)])) as Record<FxType, number>;
     this.wire();
   }
@@ -71,7 +74,7 @@ export class Fx {
     p.color = o.color ?? WHITE; p.alpha = o.alpha ?? 1;
     p.gravity = o.gravity ?? 0; p.drag = o.drag ?? 0;
     p.rot = o.rot ?? 0; p.spin = o.spin ?? 0;
-    p.ground = o.ground ? 1 : 0; p.aspect = o.aspect ?? 1;
+    p.ground = o.axial ? 2 : o.ground ? 1 : 0; p.aspect = o.aspect ?? 1; p.tilt = o.tilt ?? 0;
     p.follow = o.follow ?? null; p.dy = o.dy ?? 0; p.hold = o.hold ?? false;
     p.seed = Math.random(); p.sway = o.sway ?? 0;
     this.live.push(p);
@@ -146,7 +149,7 @@ export class Fx {
       d[o] = p.x; d[o + 1] = p.y; d[o + 2] = p.z; d[o + 3] = p.size;
       d[o + 4] = p.type; d[o + 5] = p.life; d[o + 6] = p.seed; d[o + 7] = p.rot;
       d[o + 8] = p.color[0]; d[o + 9] = p.color[1]; d[o + 10] = p.color[2]; d[o + 11] = p.alpha;
-      d[o + 12] = p.ground; d[o + 13] = p.aspect; d[o + 14] = p.hold ? 0 : p.max; d[o + 15] = 0;
+      d[o + 12] = p.ground; d[o + 13] = p.aspect; d[o + 14] = p.hold ? 0 : p.max; d[o + 15] = p.tilt;
     }
     this.count = live.length;
   }
@@ -241,6 +244,99 @@ export class Fx {
   lootBeam(e: AnyEntity, rarity: Rarity): Particle | null {
     const tall = rarity === 'unique' || rarity === 'legendary';
     return this.spawn('beam', e.x, e.y + (tall ? 2.6 : 1.4), e.z, { size: tall ? 0.36 : 0.22, aspect: tall ? 6.5 : 3.5, life: 1, color: this.rarityPencil(rarity), hold: true, follow: e, dy: tall ? 2.6 : 1.4, alpha: 1.2 });
+  }
+
+  laser(ax: number, ay: number, az: number, bx: number, by: number, bz: number, color: Vec3 = CYAN, width = 0.3, life = 0.3, type: 'laser' | 'arc' = 'laser'): Particle | null {
+    const dx = bx - ax, dy = by - ay, dz = bz - az, len = Math.max(Math.hypot(dx, dy, dz), 1e-3);
+    return this.spawn(type, ax + dx / 2, ay + dy / 2, az + dz / 2, {
+      size: width, aspect: len / 2 / width, rot: Math.atan2(dx, dz), tilt: Math.asin(Math.max(-1, Math.min(1, dy / len))), axial: true, life, color,
+    });
+  }
+  muzzleOf(e: AnyEntity): Vec3 {
+    const c = Math.cos(e.yaw), s = Math.sin(e.yaw), k = e.scale;
+    return [e.x + (c * 0.15 - s * 0.6) * k, e.y + 0.9 * k, e.z + (s * 0.15 + c * 0.6) * k];
+  }
+  dronePos(i: number, n: number, e: AnyEntity): Vec3 {
+    const t = this.game.time, a = t * 2.2 + (i / n) * Math.PI * 2;
+    return [e.x + Math.cos(a) * 1.2, e.y + 1.9 + 0.14 * Math.sin(t * 5 + i * 1.7), e.z + Math.sin(a) * 1.2];
+  }
+  bits(x: number, y: number, z: number, n: number, color: Vec3 = CYAN, speed = 4): void {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.283, s = speed * (0.4 + Math.random() * 0.8);
+      this.spawn('bit', x, y, z, { size: 0.07 + Math.random() * 0.08, life: 0.35 + Math.random() * 0.45, color: Math.random() < 0.25 ? MAGENTA : color, vx: Math.cos(a) * s, vy: 1 + Math.random() * speed * 0.6, vz: Math.sin(a) * s, gravity: 5, drag: 1.6 });
+    }
+  }
+  muzzle(e: AnyEntity, color: Vec3 = CYAN, big = false): Vec3 {
+    const m = this.muzzleOf(e);
+    this.spawn('burst', m[0], m[1], m[2], { size: big ? 0.75 : 0.45, life: 0.16, color, rot: Math.random() * 6 });
+    this.spawn('ring', m[0], m[1], m[2], { size: big ? 0.6 : 0.35, life: 0.18, color, alpha: 0.9 });
+    this.bits(m[0], m[1], m[2], big ? 6 : 3, color, 3);
+    this.light(m[0], m[1], m[2], big ? 7 : 4.5, 0.12);
+    return m;
+  }
+  shock(x: number, y: number, z: number, r: number, color: Vec3 = CYAN, life = 0.45): void {
+    this.spawn('shock', x, y + 0.09, z, { size: r, life, color, ground: true, rot: Math.random() * 6 });
+  }
+  pillar(x: number, y: number, z: number, r: number, color: Vec3 = CYAN, huge = false): void {
+    const w = Math.max(0.35, r * (huge ? 0.42 : 0.3));
+    this.laser(x, y + (huge ? 26 : 16), z, x, y - 0.2, z, color, w, huge ? 0.9 : 0.42);
+    this.laser(x, y + (huge ? 26 : 16), z, x, y - 0.2, z, CYBER.WHITE, w * 0.45, huge ? 0.75 : 0.32);
+    this.shock(x, y, z, r * 1.15, color, huge ? 0.8 : 0.45);
+    if (huge) {
+      for (let k = 1; k < 4; k++) setTimeout(() => this.shock(x, y, z, r * (1 + k * 0.35), k % 2 ? MAGENTA : color, 0.7), k * 140);
+      this.spawn('burst', x, y + 1.2, z, { size: r * 0.5, life: 0.4, color, rot: Math.random() * 6 });
+      this.spawn('sigil', x, y + 0.1, z, { size: r * 1.05, life: 1.2, color, ground: true });
+    }
+    this.bits(x, y + 0.4, z, huge ? 40 : 10, color, huge ? 9 : 5);
+    for (let i = 0; i < (huge ? 24 : 8); i++) {
+      const a = Math.random() * 6.283, s = (huge ? 8 : 4) * (0.5 + Math.random());
+      this.spawn('spark', x, y + 0.3, z, { size: 0.2, life: 0.5, color, vx: Math.cos(a) * s, vy: 2 + Math.random() * 4, vz: Math.sin(a) * s, gravity: 8, drag: 1.2 });
+    }
+    this.light(x, y + 2, z, huge ? 22 : 8, huge ? 0.9 : 0.3);
+    this.game.shake(huge ? 1 : 0.35);
+    if (huge) this.game.rumble(1, 400);
+  }
+  glitch(x: number, y: number, z: number, r: number): void {
+    this.spawn('sigil', x, y + 0.1, z, { size: r, life: 0.9, color: MAGENTA, ground: true });
+    this.shock(x, y, z, r, MAGENTA, 0.55);
+    setTimeout(() => this.shock(x, y, z, r * 0.7, CYAN, 0.45), 90);
+    for (let i = 0; i < 30; i++) {
+      const a = Math.random() * 6.283, d = r * Math.sqrt(Math.random());
+      this.spawn('bit', x + Math.cos(a) * d, y + 0.3 + Math.random() * 2.2, z + Math.sin(a) * d, { size: 0.08 + Math.random() * 0.14, life: 0.5 + Math.random() * 0.6, color: Math.random() < 0.5 ? MAGENTA : CYAN, vy: 0.6, sway: 1.5 });
+    }
+    this.light(x, y + 1, z, r * 1.6, 0.35);
+  }
+  hexShield(e: AnyEntity, life: number): void {
+    this.spawn('hex', e.x, e.y + 0.95 * e.scale, e.z, { size: 1.3 * e.scale, life, color: CYAN, follow: e, dy: 0.95 * e.scale, alpha: 0.9 });
+    this.shock(e.x, e.y, e.z, 2.2, CYAN, 0.4);
+    this.bits(e.x, e.y + 1, e.z, 12, CYAN, 4);
+  }
+  vortex(x: number, y: number, z: number, r: number, life: number): Particle | null {
+    this.spawn('sigil', x, y + 0.1, z, { size: r * 1.08, life, color: VOID, ground: true });
+    return this.spawn('vortex', x, y + 0.12, z, { size: r, life, color: VOID, ground: true });
+  }
+  suck(x: number, y: number, z: number, r: number): void {
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * 6.283, d = r * (0.6 + Math.random() * 0.4), h = 0.3 + Math.random() * 1.6;
+      this.spawn(Math.random() < 0.5 ? 'bit' : 'spark', x + Math.cos(a) * d, y + h, z + Math.sin(a) * d, { size: 0.1 + Math.random() * 0.08, life: 0.45, color: Math.random() < 0.6 ? VOID : MAGENTA, vx: -Math.cos(a) * d * 2.1, vy: -h * 1.4, vz: -Math.sin(a) * d * 2.1 });
+    }
+  }
+  implode(x: number, y: number, z: number, r: number): void {
+    this.spawn('burst', x, y + 1, z, { size: Math.min(3.5, r * 0.45), life: 0.35, color: VOID, rot: Math.random() * 6 });
+    this.pillar(x, y, z, r * 0.6, VOID, false);
+    this.shock(x, y, z, r * 1.3, MAGENTA, 0.6);
+    this.bits(x, y + 1, z, 26, VOID, 8);
+    this.game.shake(0.7);
+  }
+  overclock(e: AnyEntity, life: number): void {
+    this.spawn('sigil', e.x, e.y + 0.1, e.z, { size: 1.7, life, color: CYAN, ground: true, follow: e, dy: 0.1 });
+    this.shock(e.x, e.y, e.z, 3.4, CYAN, 0.5);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.283;
+      this.laser(e.x + Math.cos(a) * 1.4, e.y + 0.2, e.z + Math.sin(a) * 1.4, e.x + Math.cos(a) * 0.3, e.y + 2.6, e.z + Math.sin(a) * 0.3, CYAN, 0.16, 0.35, 'arc');
+    }
+    this.bits(e.x, e.y + 1, e.z, 16, CYAN, 5);
+    this.light(e.x, e.y + 1.5, e.z, 9, 0.5);
   }
 
   private ambient(dt: number): void {

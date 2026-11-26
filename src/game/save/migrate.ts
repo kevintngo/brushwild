@@ -3,6 +3,7 @@ import { EQUIP_SLOTS } from '../types';
 import { BAG_SIZE, BAR_SIZE, newCharacter, newJourney, type Character, type Bounty } from '../state/character';
 import { CLASSES } from '../content/classes';
 import { buildTree } from '../rules/tree';
+import { LEVEL_CAP } from '../rules/stats';
 import { Rng } from '../../engine/rng';
 import type { ItemInstance } from '../rules/items';
 
@@ -24,7 +25,7 @@ export function migrateV1(old: V1): Character {
   const s = old.sheet ?? {};
   const c = newCharacter('warden', 'Wayfarer', (old.seed ?? 1) ^ 0x2f);
   const rng = new Rng((old.seed ?? 1) ^ 0x51);
-  c.level = Math.max(1, Math.min(50, s.level ?? 1));
+  c.level = Math.max(1, Math.min(LEVEL_CAP, s.level ?? 1));
   c.xp = Math.max(0, s.xp ?? 0);
   c.gold = Math.max(0, s.glint ?? 0);
   const j = c.journey;
@@ -76,7 +77,7 @@ export function sanitizeCharacter(raw: unknown): Character | null {
   if (!c.bar.some(Boolean)) c.bar = base.bar;
   if (!c.pos || !Number.isFinite(c.pos.x) || !Number.isFinite(c.pos.z)) c.pos = base.pos;
   if (!c.zone || (c.zone.kind !== 'overworld' && c.zone.kind !== 'dungeon')) c.zone = { kind: 'overworld' };
-  c.level = Math.max(1, Math.min(50, Math.round(c.level || 1)));
+  c.level = Math.max(1, Math.min(LEVEL_CAP, Math.round(c.level || 1)));
   c.gold = Math.max(0, Math.round(c.gold || 0));
   return c;
 }

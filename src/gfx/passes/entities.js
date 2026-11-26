@@ -164,6 +164,7 @@ export class EntityPass {
       if (!def) throw new Error(`Unknown archetype "${id}"`);
       p = new Program(this.gl, 'entity:' + id, ENTITY_VS, entityFS(def), { OUTLINE_PX: '1.6' });
       p.def = def;
+      def.init?.(this.gl);
       this.programs.set(id, p);
     }
     return p;
@@ -189,6 +190,7 @@ export class EntityPass {
       p.set('uTime', frame.timeTwos);
       p.set('uViewProj', frame.camera.viewProj).set('uBound', [p.def.boundY, p.def.boundR]);
       p.set('uFar', frame.far).set('uPixel', 2 * frame.camera.tan[1] / target.height);
+      p.def.bind?.(p, gl);
       const bytes = batch.count * INSTANCE_FLOATS * 4;
       if (bytes > this.capacity) {
         this.capacity = bytes * 2;

@@ -145,9 +145,25 @@ describe('skill tree', () => {
   it('starts every class with its starting points spent', () => {
     for (const cls of CLASS_LIST) {
       const c = newCharacter(cls.id, 'Test', 1);
-      expect(pointsSpent(c.tree)).toBe(pointsEarned(1, 0));
+      expect(c.level).toBe(cls.startLevel ?? 1);
+      expect(pointsSpent(c.tree)).toBe(pointsEarned(c.level, c.bonusPoints));
       for (const id of cls.start) expect(buildTree(cls).nodes.get(id)).toBeTruthy();
+      for (const id of c.bar) if (id) expect(c.tree[id]).toBeGreaterThan(0);
     }
+  });
+
+  it('starts the cyborg at level 99 with a legal, fully maxed tree', () => {
+    const cls = CLASSES.cyborg, tree = buildTree(cls), c = newCharacter('cyborg', '', 1);
+    expect(c.level).toBe(99);
+    expect(c.name).toBe('Thariq');
+    for (const s of cls.skills) expect(c.tree[s.id] ?? 0).toBe(s.category === 'ultimate' && s.id !== 'scalinglaw' ? 0 : 5);
+    for (const [id, rank] of Object.entries(c.tree)) {
+      const node = tree.nodes.get(id)!;
+      expect(rank).toBe(node.max);
+      if (node.requires) expect(c.tree[node.requires]).toBeGreaterThan(0);
+      if (node.exclusive) expect(Object.keys(c.tree).filter((o) => tree.nodes.get(o)!.exclusive === node.exclusive)).toHaveLength(1);
+    }
+    expect(c.equipment.mainhand?.base).toBe('armcannon');
   });
 });
 

@@ -63,6 +63,11 @@ const EMBER: Mat = { base: '#ffe28c', deep: '#f2a04a' };
 const FROST: Mat = { base: '#abcde8', deep: '#5a83ad' };
 const LEAF: Mat = { base: '#88b268', deep: '#4b7838' };
 const RED: Mat = { base: '#d64634', deep: '#8c261b' };
+const CYAN: Mat = { base: '#5ce2ff', deep: '#1f8fb0' };
+const PLATE: Mat = { base: '#e8ecf2', deep: '#8a94a6' };
+const GRAPHITE: Mat = { base: '#4c5263', deep: '#23262f' };
+const NIGHT: Mat = { base: '#24232e', deep: '#0d0c12' };
+const GLOW: Mat = { base: '#f4fbff', deep: '#9fdcf0' };
 const DYES = ['#b84a3a', '#4f6c9e', '#5e8c4e', '#c49434', '#885478', '#469696', '#4a4d5e', '#c8b48a'];
 
 const top = (k: Kit): DOMMatrix => k.stack[k.stack.length - 1];
@@ -357,6 +362,25 @@ function band(k: Kit): void {
   gemAt(k, 50, 35, 9);
 }
 
+function cannon(k: Kit): void {
+  shape(k, 'M16 40h44q6 0 8 4v12q-2 4 -8 4h-44q-4 0 -4 -4v-12q0 -4 4 -4z', GRAPHITE, 0.35);
+  shape(k, 'M20 37h24q3 0 3 3v20q0 3 -3 3h-24q-3 0 -3 -3v-20q0 -3 3 -3z', PLATE, 0.25);
+  line(k, 'M22 50h20', 2.2, CYAN.base, 0.95);
+  for (const x of [51, 56, 61]) line(k, `M${x} 41v18`, 1.2, INK, 0.7);
+  shape(k, 'M67 43h11v14h-11z', GRAPHITE, 0.3);
+  disc(k, 80, 50, 6, CYAN, 0.1, 1.6);
+  disc(k, 80, 50, 2.6, GLOW, 0, 0.8);
+}
+
+function badge(k: Kit, cx: number, cy: number, r: number): void {
+  disc(k, cx, cy, r, NIGHT, 0.1, 1.8);
+  shape(k, ring(cx, cy, r * 0.86), CYAN, 0, 0.9);
+  disc(k, cx, cy, r * 0.8, NIGHT, 0, 0.6);
+  const hex = Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 6 + (i * Math.PI) / 3; return `${(cx + Math.cos(a) * r * 0.52).toFixed(2)} ${(cy + Math.sin(a) * r * 0.52).toFixed(2)}`; });
+  line(k, `M${hex.join('L')}Z`, 1.8, CYAN.base, 0.95);
+  disc(k, cx, cy, r * 0.24, GLOW, 0, 0.9);
+}
+
 const BIG = grow(1.1);
 
 const DRAW: Record<string, (k: Kit) => void> = {
@@ -369,6 +393,7 @@ const DRAW: Record<string, (k: Kit) => void> = {
   staff: (k) => group(k, rot(30), () => staff(k)),
   wand: (k) => group(k, rot(34).multiply(BIG), () => wand(k)),
   bow: (k) => group(k, rot(30).multiply(move(2, 0)), () => bow(k)),
+  cannon: (k) => group(k, rot(-28).multiply(move(4, 0)), () => cannon(k)),
   quiver: (k) => group(k, rot(14), () => quiver(k)),
   shield: (k) => shield(k),
   chest: (k) => chest(k, false),
@@ -628,6 +653,15 @@ const CLASS_ART: Record<ClassId, (k: Kit) => void> = {
       else disc(k, x, y, 3.4, FLAME, 0, 1.4);
     }
     flame(k, 78, 54, 0.62);
+  },
+  cyborg: (k) => {
+    line(k, 'M86 46L119 38', 7, CYAN.base, 0.45);
+    line(k, 'M86 46L119 38', 2.2, '#ffffff', 0.95);
+    group(k, move(-2, 0).multiply(rot(-14)), () => cannon(k));
+    badge(k, 84, 74, 18);
+    for (const [x, y] of [[30, 22], [44, 14], [104, 22], [18, 80]]) shape(k, `M${x} ${y - 5}l3 5l-3 5l-3 -5z`, CYAN, 0.05, 1.1);
+    line(k, 'M10 30h10l6 -6h12', 1.3, CYAN.deep, 0.8);
+    line(k, 'M58 92h12l5 -5', 1.3, CYAN.deep, 0.8);
   },
   strider: (k) => {
     group(k, move(18, 0).multiply(rot(-6)), () => bow(k));

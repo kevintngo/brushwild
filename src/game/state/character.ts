@@ -1,6 +1,7 @@
 import type { ClassId, Difficulty, EquipSlot, SkillId } from '../types';
 import type { ItemInstance } from '../rules/items';
-import { starterItem } from '../rules/items';
+import { generateItem, starterItem } from '../rules/items';
+import { buildTree, pointsEarned, pointsSpent } from '../rules/tree';
 import { CLASSES } from '../content/classes';
 import { BASE, slotsFor } from '../content/items';
 import { Rng } from '../../engine/rng';
@@ -86,24 +87,25 @@ export function newJourney(): Journey {
 export function newCharacter(classId: ClassId, name: string, seed = Date.now()): Character {
   const cls = CLASSES[classId];
   const rng = new Rng(seed);
-  const tree: Record<string, number> = {};
-  for (const id of cls.start) tree[id] = 1;
+  const level = cls.startLevel ?? 1;
+  const tree: Record<string, number> = cls.startLevel ? maxedTree(classId) : {};
+  if (!cls.startLevel) for (const id of cls.start) tree[id] = 1;
   const equipment: Character['equipment'] = {};
   for (const id of cls.gear) {
     const slot: EquipSlot = slotsFor(BASE[id])[0];
-    equipment[slot] = starterItem(rng, id, classId);
+    equipment[slot] = cls.startLevel ? { ...generateItem(rng, { ilvl: level, rarity: 'legendary', base: id, classId }), fresh: false } : starterItem(rng, id, classId);
   }
   const bar: (SkillId | null)[] = new Array(BAR_SIZE).fill(null);
-  cls.start.forEach((id, i) => (bar[i] = id));
+  (cls.bar ?? cls.start).slice(0, BAR_SIZE).forEach((id, i) => (bar[i] = id));
   return {
     version: 2,
     id: rng.uid('c'),
-    name: name.trim() || cls.name,
+    name: name.trim() || cls.heroName || cls.name,
     classId,
     created: Date.now(),
     played: 0,
-    level: 1, xp: 0, gold: 20,
-    tree, bonusPoints: 0,
+    level, xp: 0, gold: cls.startLevel ? 99999 : 20,
+    tree, bonusPoints: Math.max(0, pointsSpent(tree) - pointsEarned(level, 0)),
     bar,
     equipment,
     bag: new Array(BAG_SIZE).fill(null),
@@ -119,4 +121,17 @@ export function newCharacter(classId: ClassId, name: string, seed = Date.now()):
     hp: 1e9, resource: cls.resource.startFull ? 1e9 : 0,
     tally: { kills: 0, deaths: 0, elites: 0, bosses: 0, dungeons: 0, legendaries: 0 },
   };
+}
+
+export function maxedTree(classId: ClassId): Record<string, number> {
+  const cls = CLASSES[classId];
+  const tree: Record<string, number> = {};
+  const taken = new Set<string>();
+  for (const n of buildTree(cls).nodes.values()) {
+    if (n.kind === 'key' && n.id !== cls.keys[0]?.id) continue;
+    if (n.exclusive && taken.has(n.exclusive)) continue;
+    if (n.exclusive) taken.add(n.exclusive);
+    tree[n.id] = n.max;
+  }
+  return tree;
 }

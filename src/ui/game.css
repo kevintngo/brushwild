@@ -224,12 +224,13 @@ body.contrast .itip-legend { color: #7a2c00; }
 .hero-play strong { font-weight: 400; font-size: 22px; }
 .hero-play span { color: var(--dim); font-size: 15px; }
 .hero-play:hover { background: #ffe9a8; }
-.classes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.class-card { display: grid; gap: 4px; justify-items: start; text-align: left; padding: 10px 14px 12px; background: var(--paper); border: 1.6px solid var(--faint); border-radius: var(--wobble); }
+.classes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.class-card { position: relative; min-width: 0; display: grid; gap: 4px; justify-items: start; text-align: left; padding: 10px 14px 12px; background: var(--paper); border: 1.6px solid var(--faint); border-radius: var(--wobble); }
 .class-art { display: block; justify-self: stretch; width: 100%; aspect-ratio: 6 / 5; border-radius: 8px; border: 1.2px solid var(--faint); }
 .class-card.on .class-art { border-color: var(--pen); }
 .class-card strong { font-weight: 400; font-size: 24px; }
 .class-card small { color: var(--dim); font-size: 15px; }
+.class-level { position: absolute; top: 4px; right: 4px; padding: 0 8px; font: 700 12px/20px 'Atkinson Hyperlegible', sans-serif; font-style: normal; color: #fff; background: #1f8fb0; border: 1.5px solid var(--pen); border-radius: 999px; }
 .class-card.on { border-color: var(--pen); border-width: 2.4px; background: #fff6dc; }
 .class-skills { display: flex; gap: 4px; }
 .class-skills .ico { width: 30px; height: 30px; }
@@ -237,7 +238,8 @@ body.contrast .itip-legend { color: #7a2c00; }
 .name-field { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; font-size: 18px; }
 .name-field input { font: inherit; padding: 6px 10px; background: var(--paper); border: 1.5px solid var(--pen); border-radius: var(--wobble); color: var(--ink); }
 @media (max-width: 640px) {
-  .classes { grid-template-columns: 1fr; }
+  .classes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .class-card strong { font-size: 20px; }
   .tree-layout { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   .detail { border-left: 0; border-top: 1.4px solid var(--pen); max-height: 42vh; }
   .settings-layout { grid-template-columns: 1fr; }

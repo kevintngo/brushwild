@@ -5,7 +5,7 @@ import type { ItemInstance } from './rules/items';
 export type Vec3 = [number, number, number];
 export type Pencils = [Vec3, Vec3, Vec3];
 
-export type ClassId = 'warden' | 'emberwright' | 'strider';
+export type ClassId = 'warden' | 'emberwright' | 'strider' | 'cyborg';
 export const ATTRS = ['might', 'grace', 'vigor', 'mind'] as const;
 export type Attr = typeof ATTRS[number];
 export const ELEMENTS = ['physical', 'fire', 'frost', 'storm', 'poison', 'shadow'] as const;

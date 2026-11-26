@@ -3,7 +3,7 @@ import type { Effect, Power } from './effects';
 
 export type BehaviorId =
   | 'melee' | 'projectile' | 'nova' | 'blast' | 'zone' | 'dash' | 'leap'
-  | 'buff' | 'heal' | 'barrier' | 'chain' | 'trap' | 'mark';
+  | 'buff' | 'heal' | 'barrier' | 'chain' | 'trap' | 'mark' | 'beam';
 
 export type SkillParams = Record<string, number>;
 
@@ -71,6 +71,10 @@ export interface ClassDef {
   skills: SkillDef[];
   passives: PassiveDef[];
   keys: KeyPassiveDef[];
+  archetype?: string;
+  heroName?: string;
+  startLevel?: number;
+  bar?: SkillId[];
 }
 
 export type ClusterId = SkillCategory | 'key';

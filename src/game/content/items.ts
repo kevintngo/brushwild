@@ -18,6 +18,7 @@ export interface ItemBase {
   armor?: number;
   implicit?: { stat: StatId; value: number }[];
   shape: number;
+  special?: boolean;
 }
 
 export const BASES: ItemBase[] = [
@@ -29,12 +30,14 @@ export const BASES: ItemBase[] = [
   { id: 'staff', name: 'Staff', kind: 'weapon', slot: 'weapon', type: 'staff', hands: 2, dmg: [15, 21], speed: 1.0, shape: 5, implicit: [{ stat: 'resourceMax', value: 10 }] },
   { id: 'wand', name: 'Wand', kind: 'weapon', slot: 'weapon', type: 'wand', hands: 1, dmg: [9, 13], speed: 1.3, shape: 5, implicit: [{ stat: 'critChance', value: 0.03 }] },
   { id: 'shortbow', name: 'Bow', kind: 'weapon', slot: 'weapon', type: 'bow', hands: 2, dmg: [13, 19], speed: 1.1, shape: 5 },
+  { id: 'armcannon', name: 'Arm Cannon', kind: 'weapon', slot: 'weapon', type: 'cannon', hands: 2, dmg: [120, 160], speed: 1.5, shape: 5, special: true, implicit: [{ stat: 'critChance', value: 0.15 }, { stat: 'attackSpeed', value: 0.25 }] },
   { id: 'dagger', name: 'Dagger', kind: 'weapon', slot: 'weapon', type: 'dagger', hands: 1, dmg: [8, 12], speed: 1.45, shape: 4, implicit: [{ stat: 'critChance', value: 0.04 }] },
   { id: 'shield', name: 'Shield', kind: 'offhand', slot: 'offhand', type: 'shield', armor: 10, shape: 8, implicit: [{ stat: 'block', value: 0.15 }] },
   { id: 'focus', name: 'Focus', kind: 'offhand', slot: 'offhand', type: 'focus', shape: 7, implicit: [{ stat: 'resourceRegen', value: 0.1 }, { stat: 'critChance', value: 0.02 }] },
   { id: 'quiver', name: 'Quiver', kind: 'offhand', slot: 'offhand', type: 'quiver', shape: 6, implicit: [{ stat: 'dmgRanged', value: 0.08 }, { stat: 'attackSpeed', value: 0.03 }] },
   { id: 'hood', name: 'Hood', kind: 'armor', slot: 'helm', armor: 6, shape: 6 },
   { id: 'jerkin', name: 'Jerkin', kind: 'armor', slot: 'chest', armor: 12, shape: 6 },
+  { id: 'plating', name: 'Cyber Plating', kind: 'armor', slot: 'chest', armor: 160, shape: 6, special: true, implicit: [{ stat: 'resistAll', value: 0.25 }, { stat: 'lifePct', value: 0.5 }] },
   { id: 'robe', name: 'Robe', kind: 'armor', slot: 'chest', armor: 9, shape: 6, implicit: [{ stat: 'resistAll', value: 0.03 }] },
   { id: 'gloves', name: 'Gloves', kind: 'armor', slot: 'gloves', armor: 5, shape: 6 },
   { id: 'breeches', name: 'Breeches', kind: 'armor', slot: 'legs', armor: 8, shape: 6 },
