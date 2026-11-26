@@ -93,7 +93,7 @@ void main() {
   float press = mix(0.72, 1.0, vnoise(pe.xy * 5.0 + eLook.x * 31.0));
   float contour = hit ? 0.0 : smoothstep(w, w * 0.5, minD);
   float again = hit ? 0.0 : smoothstep(1.85 * w, 1.65 * w, minD) * smoothstep(1.2 * w, 1.35 * w, minD)
-    * step(0.76, vnoise(pe.xy * 1.6 + eLook.x * 9.0)) * 0.3;
+    * step(0.76, vnoise(pe.xy * 1.6 + eLook.x * 9.0)) * ${(def.again ?? 0.3).toFixed(2)};
   float edge = max(max(contour, inner) * press, again);
   if (!hit && edge < 0.02) discard;
 

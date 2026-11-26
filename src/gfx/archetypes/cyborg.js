@@ -63,7 +63,7 @@ function bind(p, gl) {
 }
 
 registerArchetype({
-  id: 'cyborg', boundY: 0.82, boundR: 1.12, steps: 84, init, bind,
+  id: 'cyborg', boundY: 0.82, boundR: 1.12, steps: 84, again: 0, init, bind,
   glsl: glsl`
 ${SKELETON}
 uniform highp sampler3D uHeadSdf;
@@ -114,7 +114,7 @@ float headMap(vec3 p) {
   vec3 q = (p - cHeadAt) / HEAD_K;
   if (uHeadReady < 0.5) return (length(q - vec3(0.0, 0.0, 0.03)) - 0.31) * HEAD_K;
   float box = sdBox(q - (HEAD_LO + HEAD_HI) * 0.5, (HEAD_HI - HEAD_LO) * 0.5);
-  if (box > 0.0) return (box + 0.03) * HEAD_K;
+  if (box > 0.0) return (box + 0.036) * HEAD_K;
   float s = texture(uHeadSdf, (q - HEAD_LO) / (HEAD_HI - HEAD_LO)).r;
   return (s - 0.5) * 2.0 * HEAD_RANGE * HEAD_K;
 }
